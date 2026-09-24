@@ -61,6 +61,7 @@
   .sec-title::after{content:"";flex:1;height:1px;background:var(--border)}
 
   .list{display:grid;gap:10px;padding-bottom:44px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 2px}
   .item{
     display:block;border:1px solid var(--border);border-radius:14px;padding:13px 16px;
     background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
@@ -143,29 +144,7 @@
 
 <main class="wrap">
   <div class="sec-title reveal">PROJECTS</div>
-  <div class="list">
-    <a class="item reveal" href="https://lcssdwl.github.io/yunyin/">
-      <div class="row">
-        <div class="ic">
-          <svg viewBox="0 0 24 24"><circle cx="9" cy="16.5" r="2.6"/><circle cx="17" cy="15" r="2.6"/><path d="M11.5 16.5V7.5l5.5-1.2v8.7"/></svg>
-        </div>
-        <div class="body">
-          <div class="name">云韵音乐 <span class="pill">介绍页</span></div>
-          <p class="desc">个人私有音乐库播放器 · 支持 MP3 / FLAC / WAV / M4A / AAC / OGG</p>
-        </div>
-        <span class="arrow">
-          <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
-        </span>
-      </div>
-      <div class="detail">
-        <p>个人私有音乐库播放器：服务端扫描自己的曲库并自动转码，App 端免登录即可完整听歌，支持后台播放、锁屏控制、逐行歌词、音效均衡器与无损 FLAC 音质。</p>
-        <div class="tags">
-          <span>私有曲库</span><span>免登录</span><span>MP3</span><span>FLAC</span><span>WAV</span><span>M4A</span><span>AAC</span><span>OGG</span>
-        </div>
-        <span class="go">打开站点 lcssdwl.github.io/yunyin <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span>
-      </div>
-    </a>
-  </div>
+  <div class="list" id="list"><div class="empty">加载中…</div></div>
 </main>
 
 <footer>
@@ -185,14 +164,57 @@
 
   // 手机端：点卡片展开/收起详情，只有点「打开站点」才真正跳转
   const mq = window.matchMedia('(max-width: 600px)');
-  document.querySelectorAll('.item').forEach((item) => {
-    item.addEventListener('click', (e) => {
-      if (!mq.matches) return;
-      if (e.target.closest('.go')) return;
-      e.preventDefault();
-      item.classList.toggle('open');
+  function bindFold() {
+    document.querySelectorAll('.item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (!mq.matches) return;
+        if (e.target.closest('.go')) return;
+        e.preventDefault();
+        item.classList.toggle('open');
+      });
     });
-  });
+  }
+  bindFold();
+
+  // 列表数据放在 list.json，改这个文件即可增删项目
+  const ICONS = {
+    music: '<circle cx="9" cy="16.5" r="2.6"/><circle cx="17" cy="15" r="2.6"/><path d="M11.5 16.5V7.5l5.5-1.2v8.7"/>',
+    web: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.6 3 14.4 0 18"/><path d="M12 3c-3 3.6-3 14.4 0 18"/>',
+    box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>'
+  };
+  const ARROW = '<svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+
+  function cardHTML(p) {
+    const icon = ICONS[p.icon] || ICONS.web;
+    const badge = p.badge ? ' <span class="pill">' + p.badge + '</span>' : '';
+    const tags = (p.tags || []).map(t => '<span>' + t + '</span>').join('');
+    return '<a class="item reveal in" href="' + p.url + '">' +
+      '<div class="row">' +
+        '<div class="ic"><svg viewBox="0 0 24 24">' + icon + '</svg></div>' +
+        '<div class="body">' +
+          '<div class="name">' + p.name + badge + '</div>' +
+          '<p class="desc">' + (p.desc || '') + '</p>' +
+        '</div>' +
+        '<span class="arrow">' + ARROW + '</span>' +
+      '</div>' +
+      '<div class="detail">' +
+        (p.detail ? '<p>' + p.detail + '</p>' : '') +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') +
+        '<span class="go">打开站点 ' + (p.site || p.url) + ' ' + ARROW + '</span>' +
+      '</div>' +
+    '</a>';
+  }
+
+  fetch('list.json')
+    .then(r => r.json())
+    .then(data => {
+      const list = data.projects || data;
+      document.getElementById('list').innerHTML = list.map(cardHTML).join('');
+      bindFold();
+    })
+    .catch(() => {
+      document.getElementById('list').innerHTML = '<div class="empty">列表加载失败，请检查 list.json</div>';
+    });
 </script>
 </body>
 </html>
